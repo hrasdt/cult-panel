@@ -1,4 +1,4 @@
-from gi.repository import Clutter, Wnck, Gdk
+from gi.repository import Clutter, Wnck
 
 def is_skipped(win):
     return win.is_skip_tasklist() or win.is_skip_pager()
@@ -44,11 +44,12 @@ def workspace_by_number(num):
 class PagerModel (object):
     """ Store the state of workspaces. """
 
-    NO_WINDOWS = 0 # ""
-    MINIMISED  = 1 # "m" # Minimised window.
-    OCCUPIED   = 2 # "o" # A normal window.
-    URGENT     = 4 # "u" # Window requesting attention.
-    ACTIVE     = 8 # "a" # The active workspace.
+    # Constants for the state bitstring.
+    NO_WINDOWS = 0 #
+    MINIMISED  = 1 # Minimised window.
+    OCCUPIED   = 2 # A normal window.
+    URGENT     = 4 # Window requesting attention.
+    ACTIVE     = 8 # The active workspace.
 
     def __init__(self):
         self.screen = Wnck.Screen.get_default()
@@ -72,12 +73,16 @@ class PagerModel (object):
         for w in win_list:
             ws_workspace = w.get_workspace()
             if is_urgent(w):
+                # Urgent windows are always noted.
                 self.workspace_states[ws_workspace] |= PagerModel.URGENT
             elif is_skipped(w):
+                # We ignore these for obvious reasons.
                 continue
             else:
+                # Minimised.
                 if is_mini(w):
                     self.workspace_states[ws_workspace] |= PagerModel.MINIMISED
+                # Just a normal window.
                 else:
                     self.workspace_states[ws_workspace] |= PagerModel.OCCUPIED
 
@@ -89,18 +94,22 @@ class PagerModel (object):
                 break
 
     def change_workspace(self, screen, prev):
+        # Disable the 'active' flag on the old workspace.
         self.workspace_states[prev] &= ~PagerModel.ACTIVE
+
+        # And enable it on the now-current one.
         cur = self.screen.get_active_workspace()
         self.workspace_states[cur] |= PagerModel.ACTIVE
 
     def get_state(self, ws):
+        """ Get the state bitmask for a workspace. """
         if isinstance(ws, int):
             return self.workspace_states[self.workspaces[ws]]
         elif isinstance(ws, str):
             for i in self.workspaces:
                 if i.get_name() == ws:
                     return self.workspace_states[i]
-            return None
+            return None # Couldn't find it :/
         else:
             return self.workspace_states[ws]
 
@@ -110,7 +119,6 @@ class PagerModel (object):
     def is_active(self, ws):
         state = self.get_state(ws)
         return state & PagerModel.ACTIVE
-    
 
     def get_workspace_number(self, num):
         return self.workspaces[num]

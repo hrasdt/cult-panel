@@ -23,25 +23,13 @@ from gi.repository import Wnck, Clutter, Gtk, Gdk
 import arrow # For time mangling.
 
 import config # My config file handler.
-from clock import ClockApplet
+from Clock import ClockApplet
 
 from math import floor
 from pprint import pprint
 
-#from window_list import *
 from Pager import Pager
 from PagerModel import *
-
-# Smooth scroll threshold which will be considered a workspace-changing scroll.
-#SMOOTH_THRESHOLD = 0.8
-
-def mk_colour(hex):
-    stat, col = Clutter.Color.from_string(hex)
-
-    if stat:
-        return col
-    else:
-        raise Exception("Couldn't create a Clutter.Color from " + str(hex))
 
 if __name__ == "__main__":
     # Gtk application window.
@@ -89,9 +77,9 @@ if __name__ == "__main__":
     box.add_actor(qq)
 
     # The clock.
-    rr = ClockApplet("hh:mm:ss",
-                     colour = Clutter.Color.new(0, 0, 0, 255))
-    box.add_actor(rr)
+    clock = ClockApplet("hh:mm:ss",
+                        colour = Clutter.Color.new(255, 255, 255, 255))
+    box.add_actor(clock)
 
     # And the pager.                   
     pager = Pager()
@@ -102,7 +90,5 @@ if __name__ == "__main__":
     screen.connect("window-opened", pager.update)
     screen.connect("window-closed", pager.update)
     
-#    stage.show()
-#    Clutter.main()
     win.show_all()
     Gtk.main()

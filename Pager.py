@@ -1,6 +1,5 @@
 from gi.repository import Wnck, Clutter, Gdk
 
-#from wmanagement import Workspace, switch_workspace, get_used_workspaces
 from PagerModel import PagerModel, get_model, switch_workspace, get_state, workspace_by_number
 
 class PagerDot(Clutter.Box):
@@ -9,7 +8,7 @@ class PagerDot(Clutter.Box):
 
         # The workspace name.
         self.set_name(workspace.get_name())
-        self.number = workspace.get_number()
+        self.number = workspace.get_number() # Used to look up the workspace.
 
         self.lm = Clutter.BinLayout.new(Clutter.BinAlignment.CENTER,
                                         Clutter.BinAlignment.CENTER)
@@ -30,14 +29,15 @@ class PagerDot(Clutter.Box):
                     Clutter.BinAlignment.CENTER, Clutter.BinAlignment.END)
 
     def update(self, *ignored):
-        # Parse the workspace list.
         self.set_name(workspace_by_number(self.number).get_name())
         state = get_state(self.number)
 
+        # Set the colours.
         self.main_dot.set_color(Pager.get_colour(state, "main"))
         self.active_dot.set_color(Pager.get_colour(state, "active"))
 
 class Pager(Clutter.Box):
+    """ A pager widget to show the workspace view. """
     DOT_SIZE = 8
     DOT_SPACING = 4
 

@@ -4,13 +4,12 @@ import arrow
 class ClockApplet(Clutter.Text):
     def __init__(self, timefmt,
                  font_desc = "Bauhaus 9",
-                 text = "«Clock»",
                  colour = None):
         
         Clutter.Text.__init__(self)
 
         self.set_font_name(font_desc)
-        self.set_text(text)
+        self.set_text("[Clock]")
         if colour:
             self.set_color(colour)
         
