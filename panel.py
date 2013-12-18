@@ -63,27 +63,21 @@ if __name__ == "__main__":
     stage = embed.get_stage()
     stage.set_color(Clutter.Color.new(48, 48, 48, 255))
 
-    # Layout.
-    hlayout = Clutter.BoxLayout.new()
-    hlayout.set_vertical(False)
-    hlayout.set_spacing(4)
+    # Layout and container bits.
+    hlayout = Clutter.BinLayout.new(Clutter.BinAlignment.CENTER,
+                                    Clutter.BinAlignment.CENTER)
     box = Clutter.Box.new(hlayout)
+    box.set_size(*win.get_size_request())
     stage.add_actor(box)
 
-    # This seems to be necessary so that the text aligns properly.
-    qq = Clutter.Rectangle.new()
-    qq.set_size(0, 18)
-    qq.set_color(Clutter.Color.new(0, 0, 0, 255))
-    box.add_actor(qq)
-
     # The clock.
-    clock = ClockApplet("hh:mm:ss",
+    clock = ClockApplet("HH:mm - DD.MM.YY",
                         colour = Clutter.Color.new(255, 255, 255, 255))
-    box.add_actor(clock)
+    hlayout.add(clock, Clutter.BinAlignment.END, Clutter.BinAlignment.CENTER)
 
-    # And the pager.                   
+    # And the pager.
     pager = Pager()
-    box.add_actor(pager)
+    hlayout.add(pager, Clutter.BinAlignment.CENTER, Clutter.BinAlignment.CENTER)
 
     # Bind window management events.
     screen.connect("active-workspace-changed", pager.update)
