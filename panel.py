@@ -16,17 +16,21 @@ __docstring__ = """
 """
 
 import sys
-from gi.repository import Wnck, Clutter, Gdk
+from gi.repository import GtkClutter
+GtkClutter.init(sys.argv)
+
+from gi.repository import Wnck, Clutter, Gtk, Gdk
 import arrow # For time mangling.
 
 import config # My config file handler.
 from clock import ClockApplet
 
 from math import floor
+from pprint import pprint
 
 #from window_list import *
-from workspace_indicator import Pager
-from wmanagement import *
+from Pager import Pager
+from PagerModel import *
 
 # Smooth scroll threshold which will be considered a workspace-changing scroll.
 #SMOOTH_THRESHOLD = 0.8
@@ -40,23 +44,35 @@ def mk_colour(hex):
         raise Exception("Couldn't create a Clutter.Color from " + str(hex))
 
 if __name__ == "__main__":
-    Clutter.init(sys.argv)
-    Gdk.init(sys.argv)
+    # Gtk application window.
+    win = Gtk.Window.new(Gtk.WindowType.TOPLEVEL)
+    embed = GtkClutter.Embed.new()
+    win.add(embed)
 
+    # Gtk hints and settings.
+    win.set_size_request(1366, 16)
+    win.move(0, 0)
+    win.set_title("cult panel")
+    win.stick()
+    win.set_decorated(False)
+    win.set_skip_pager_hint(True)
+    win.set_skip_taskbar_hint(True)
+    win.set_type_hint(Gdk.WindowTypeHint.DOCK)
+    
     # Load the screen.
     screen = Wnck.Screen.get_default()
     screen.force_update()
 
     def exit_cb(*args):
-        global screen # Capture scope.
+        global screen # Capture the right scope.
         screen = None
         
         Wnck.shutdown()
-        Clutter.main_quit()
+        Gtk.main_quit()
 
-    stage = Clutter.Stage.get_default()
-    stage.connect("destroy", exit_cb)
-    stage.set_size(1366, 16)
+    win.connect("destroy", exit_cb)
+
+    stage = embed.get_stage()
     stage.set_color(Clutter.Color.new(48, 48, 48, 255))
 
     # Layout.
@@ -77,18 +93,16 @@ if __name__ == "__main__":
                      colour = Clutter.Color.new(0, 0, 0, 255))
     box.add_actor(rr)
 
-    # And the pager.
-    ws_list = get_used_workspaces()
-        
-#    screen.connect("window-opened", w_opened)
-#    screen.connect("window-closed", w_closed)
-                   
-    pager = Pager(ws_list)
+    # And the pager.                   
+    pager = Pager()
     box.add_actor(pager)
 
     # Bind window management events.
-    screen.connect("active-workspace-changed",
-                   lambda *args: pager.update(get_used_workspaces()))
+    screen.connect("active-workspace-changed", pager.update)
+    screen.connect("window-opened", pager.update)
+    screen.connect("window-closed", pager.update)
     
-    stage.show()
-    Clutter.main()
+#    stage.show()
+#    Clutter.main()
+    win.show_all()
+    Gtk.main()
