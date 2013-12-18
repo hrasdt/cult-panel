@@ -1,11 +1,31 @@
-from gi.repository import Gtk, Wnck, Gdk, GdkPixbuf
+from gi.repository import Wnck, Gdk, Clutter
 
 import arrow
 import config
 
-class TasklistItem(Gtk.Button):
+class PixbufTexture(Clutter.Texture):
+
+    def new(ww, hh, pb):
+        t = Clutter.Texture.new()
+
+        # Set dimensions.
+        t.set_width(ww)
+        t.set_height(hh)
+
+        # Set pixel data.
+        t.set_from_rgb_data(
+            pb.get_pixels(),
+            pb.props.has_alpha,
+            pb.get_width(),
+            pb.get_height(),
+            pb.get_rowstride(),
+            4 if pb.props.has_alpha else 3,
+            0)
+        return t
+
+class TasklistItem(Clutter.Container):
     def __init__(self, wnckwin, width = 100, height = 16):
-        Gtk.Button.__init__(self)
+#        super(self, Clutter.Container).__init__(self)
 
         # Store the Wnck window.
         self.win = wnckwin
@@ -14,24 +34,22 @@ class TasklistItem(Gtk.Button):
         pix = self.win.get_icon()
         # Scale the pixbuf.
         scaling = (height - 2) / pix.get_height()
-        pix = pix.scale_simple(pix.get_width() * scaling,
-                               height - 2,
-                               GdkPixbuf.InterpType.BILINEAR)
         
-        self.icon = Gtk.Image.new_from_pixbuf(pix)
+        self.icon = PixbufTexture.new(width, height, pix)
         self.name = self.win.get_name()
 
-        self.set_image(self.icon)
-        self.set_label(self.name)
+#        self.set_image(self.icon)
+        self.add_actor(self.icon)
+#        self.set_label(self.name)
 
         # Set style.
-        self.set_relief(Gtk.ReliefStyle.NONE)
+#        self.set_relief(Gtk.ReliefStyle.NONE)
 
         # Size.
-        self.set_size_request(100, height)
+#        self.set_size_request(100, height)
 
         # Connect signals.
-        self.connect("clicked", self.selected)
+ #       self.connect("clicked", self.selected)
 
 
     def selected(self, widget, data = None):

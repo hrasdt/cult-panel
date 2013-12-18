@@ -1,5 +1,5 @@
 
-from gi.repository import Gtk
+from gi.repository import Clutter
 import sys
 
 class cultStyle(object):
@@ -33,32 +33,7 @@ class cultStyle(object):
                 # Clock formatting.
                 elif args[0] == "clock":
                     self.clock_format = " ".join(args[1:])
-                    
-        # Construct the GTK style.
-        tmp = """
-        GtkEventBox {{
-            background-color: alpha(#fff, 0.0);
-        }}
-        GtkWindow {{
-            background-color: #F00;
-        }}
-        
-        * {{
-            padding: 0px;
-            border-width: 0px; /* Padding + borders fuck our layout up. */
 
-            background-color: {bg};
-            color: {text};
-            font-family: {fontfam};
-            font-size: {fontsize}px;
-        }}""".format(bg=self.get_hex("background"),
-                         text=self.get_hex("text"),
-                         fontfam=self.fontfam,
-                         fontsize=self.fontsize
-                        )
-        self.gstyle = Gtk.CssProvider()
-        self.gstyle.load_from_data(bytes(tmp, "utf-8"))
-        
     def get_hex(self, obj):
         return self.colours[obj]
 
