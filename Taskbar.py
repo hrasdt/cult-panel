@@ -59,12 +59,14 @@ class TaskbarItem(Clutter.Box):
         # And connect signals.
         self.wnck_win.connect("icon-changed", self.icon_changed)
         self.wnck_win.connect("name-changed", self.name_changed)
-        self.wnck_win.connect("state-changed", self.state_changed)
         self.wnck_win.connect("workspace-changed", self.workspace_changed)
 
     def belongs_to(self, window):
         return window is self.wnck_win
 
+    def get_window(self):
+        return self.wnck_win
+    
     def press_event(self, actor, event):
         if event.button == 3:
             # Minimise.
@@ -86,9 +88,8 @@ class TaskbarItem(Clutter.Box):
         self.icon = new_pixbuf_texture(self.icon.get_width(),
                                        self.icon.get_height(),
                                        win.get_icon())
-
-    def state_changed(self, win, change_mask, new_state):
-        self.set_color(Taskbar.get_theme_colour(win))
+    def update_colour(self):
+        self.set_color(Taskbar.get_theme_colour(self.wnck_win))
                     
     def workspace_changed(self, win):
         """ Update the workspace that this window is on. """
@@ -110,6 +111,7 @@ class Taskbar(Clutter.Box):
         for w in get_pager_model().get_tasklist(None, True):
             item = TaskbarItem(w)
             self.set_visibility(item, [None, active_ws])
+            item.update_colour()
             self.add_actor(item)
         
         # Make sure the right windows are visible.
@@ -119,6 +121,7 @@ class Taskbar(Clutter.Box):
         scr.connect("active-workspace-changed", self.active_workspace_changed)
         scr.connect("window-opened", self.add_window)
         scr.connect("window-closed", self.remove_window)
+        scr.connect("active-window-changed", self.update_active_window)
 
     def set_visibility(self, task_item, dat):
         """ Set the correct visibility for a TaskbarItem. """
@@ -174,6 +177,16 @@ class Taskbar(Clutter.Box):
 
         self.foreach(do_remove, None)
 
+    def update_active_window(self, screen, prev):
+        cur = screen.get_active_window()
+        did_change = 0
+        
+        for i in self.get_children():
+            if did_change >= 2: return
+            if i.belongs_to(prev) or i.belongs_to(cur):
+                did_change += 1
+                i.update_colour()
+                
     def window_workspace_changed(self, window, taskbar_child):
         if window.get_workspace() != Wnck.Screen.get_default().get_active_workspace():
             taskbar_child.hide()
