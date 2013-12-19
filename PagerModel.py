@@ -1,7 +1,10 @@
 from gi.repository import Clutter, Wnck
 
-def is_skipped(win):
-    return win.is_skip_tasklist() or win.is_skip_pager()
+def is_skipped_pager(win):
+    return win.is_skip_pager()
+
+def is_skipped_tasklist(win):
+    return win.is_skip_tasklist()
 
 def is_mini(win):
     return win.is_minimized()
@@ -23,7 +26,7 @@ def switch_workspace(direction):
         target.activate(arrow.now().timestamp)
 
 _g_model = None
-def get_model():
+def get_pager_model():
     """ Get a representation of the active workspaces.
 
     Windows for which skip-tasklist/pager are set will not be counted, unless they're also marked "urgent".
@@ -35,11 +38,11 @@ def get_model():
 
     return _g_model
 
-def get_state(ws):
-    return get_model().get_state(ws)
+def get_pager_state(ws):
+    return get_pager_model().get_state(ws)
 
 def workspace_by_number(num):
-    return get_model().get_workspace_number(num)
+    return get_pager_model().get_workspace_number(num)
 
 class PagerModel (object):
     """ Store the state of workspaces. """
@@ -57,6 +60,8 @@ class PagerModel (object):
         # Create the list of workspaces.
         self.workspaces = [] # List of WnckWorkspaces
         self.workspace_states = {} # Map from ^^ to a state bitmask.
+        self.tasklist = {} # A map from WnckWorkspaces to a list of the windows they contain.
+        
         self.refresh_state()
 
         # Connect events.
@@ -68,16 +73,26 @@ class PagerModel (object):
         self.workspaces = self.screen.get_workspaces()
         self.workspace_states = {ws : PagerModel.NO_WINDOWS
                                  for ws in self.workspaces}
+
+        self.tasklist = {ws: [] for ws in self.workspaces} # Clear the tasklist.
         
         win_list = self.screen.get_windows()
         for w in win_list:
             ws_workspace = w.get_workspace()
-            if is_urgent(w):
-                # Urgent windows are always noted.
-                self.workspace_states[ws_workspace] |= PagerModel.URGENT
-            elif is_skipped(w):
+            # Update the tasklist.
+            if not is_skipped_tasklist(w):
+                self.tasklist[ws_workspace].append(w)
+                # Connect the signals.
+                w.connect("workspace-changed", self.window_workspace_changed)
+            
+            # Now, update the Pager.
+            if is_skipped_pager(w):
                 # We ignore these for obvious reasons.
-                continue
+                if not is_urgent(w):
+                    continue
+                # But if it's urgent, it should show regardless.
+                else:
+                    self.workspace_states[ws_workspace] |= PagerModel.URGENT
             else:
                 # Minimised.
                 if is_mini(w):
@@ -101,6 +116,16 @@ class PagerModel (object):
         cur = self.screen.get_active_workspace()
         self.workspace_states[cur] |= PagerModel.ACTIVE
 
+    def window_workspace_changed(self, win):
+        ws = win.get_workspace()
+
+        # Remove it from whereever it was before now.
+        for w in self.workspaces:
+            self.tasklist[w] = [K for K in self.tasklist[w] if K is not win]
+
+        if ws is not None:
+            self.tasklist[ws].append(win)
+
     def get_state(self, ws):
         """ Get the state bitmask for a workspace. """
         if isinstance(ws, int):
@@ -122,3 +147,12 @@ class PagerModel (object):
 
     def get_workspace_number(self, num):
         return self.workspaces[num]
+
+    def get_tasklist(self, workspace, all_workspaces = False):
+        if workspace is None or all_workspaces:
+            return [task for ws in self.workspaces for task in self.tasklist[ws]]
+        else:
+            if isinstance(workspace, int):
+                return self.tasklist[self.workspaces[workspace]]
+            else:
+                return self.tasklist[workspace]

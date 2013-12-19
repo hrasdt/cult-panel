@@ -1,6 +1,6 @@
 from gi.repository import Wnck, Clutter, Gdk
 
-from PagerModel import PagerModel, get_model, switch_workspace, get_state, workspace_by_number
+from PagerModel import PagerModel, get_pager_model, switch_workspace, get_pager_state, workspace_by_number
 
 class PagerDot(Clutter.Box):
     def __init__(self, workspace, height = 16):
@@ -17,11 +17,11 @@ class PagerDot(Clutter.Box):
         # Stylin'
         self.main_dot = Clutter.Rectangle.new()
         self.main_dot.set_size(height, height)
-        self.main_dot.set_color(Pager.get_colour(get_state(self.number), "main"))
+        self.main_dot.set_color(Pager.get_theme_colour(get_pager_state(self.number), "main"))
 
         self.active_dot = Clutter.Rectangle.new()
         self.active_dot.set_size(height, height / 4)
-        self.active_dot.set_color(Pager.get_colour(get_state(self.number), "active"))
+        self.active_dot.set_color(Pager.get_theme_colour(get_pager_state(self.number), "active"))
  
         self.lm.add(self.main_dot,
                     Clutter.BinAlignment.CENTER, Clutter.BinAlignment.CENTER)
@@ -30,11 +30,11 @@ class PagerDot(Clutter.Box):
 
     def update(self, *ignored):
         self.set_name(workspace_by_number(self.number).get_name())
-        state = get_state(self.number)
+        state = get_pager_state(self.number)
 
         # Set the colours.
-        self.main_dot.set_color(Pager.get_colour(state, "main"))
-        self.active_dot.set_color(Pager.get_colour(state, "active"))
+        self.main_dot.set_color(Pager.get_theme_colour(state, "main"))
+        self.active_dot.set_color(Pager.get_theme_colour(state, "active"))
 
 class Pager(Clutter.Box):
     """ A pager widget to show the workspace view. """
@@ -48,7 +48,7 @@ class Pager(Clutter.Box):
         self.lm.set_spacing(self.DOT_SPACING)
         self.set_layout_manager(self.lm)
 
-        for i in get_model().workspaces:
+        for i in get_pager_model().workspaces:
             indic = PagerDot(i, self.DOT_SIZE)
             self.add_actor(indic)
 
@@ -57,7 +57,7 @@ class Pager(Clutter.Box):
         # Call update on each child with the appropriate workspace state.
         self.foreach(PagerDot.update, None)
 
-    def get_colour(state, element):
+    def get_theme_colour(state, element):
         col = None
         maps = {"none": "#404040",
                 "active": "#efefef",

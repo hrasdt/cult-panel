@@ -30,6 +30,7 @@ from pprint import pprint
 
 from Pager import Pager
 from PagerModel import *
+from Taskbar import Taskbar
 
 if __name__ == "__main__":
     # Gtk application window.
@@ -42,16 +43,16 @@ if __name__ == "__main__":
     win.move(0, 0)
     win.set_title("cult panel")
     win.stick()
-    win.set_decorated(False)
     win.set_skip_pager_hint(True)
     win.set_skip_taskbar_hint(True)
-    win.set_type_hint(Gdk.WindowTypeHint.DOCK)
+    win.set_type_hint(Gdk.WindowTypeHint.DOCK) # Also hides decoration.
     
     # Load the screen.
     screen = Wnck.Screen.get_default()
     screen.force_update()
 
     def exit_cb(*args):
+        # I don't know if this is actually necessary...
         global screen # Capture the right scope.
         screen = None
         
@@ -70,6 +71,11 @@ if __name__ == "__main__":
     box.set_size(*win.get_size_request())
     stage.add_actor(box)
 
+    # The taskbar.
+    taskbar = Taskbar()
+    hlayout.add(taskbar, Clutter.BinAlignment.START, Clutter.BinAlignment.CENTER)
+
+    
     # The clock.
     clock = ClockApplet("HH:mm - DD.MM.YY",
                         colour = Clutter.Color.new(255, 255, 255, 255))
