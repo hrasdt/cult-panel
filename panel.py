@@ -66,6 +66,12 @@ def scroll_workspace(actor, event, reverse = False):
             if now - _last_scroll > SECS_PER_SCROLL * 1000:
                 _last_scroll = now
                 switch_workspace("prev" if not reverse else "next")
+
+def swipe_workspace(action, actor, direction):
+    if direction == Clutter.SwipeDirection.LEFT:
+        switch_workspace("prev")
+    elif direction == Clutter.SwipeDirection.RIGHT:
+        switch_workspace("next")
         
 if __name__ == "__main__":
     # Gtk application window.
@@ -133,8 +139,12 @@ if __name__ == "__main__":
     # At the moment, we only know how to open Fluxbox's menu.
     if screen.get_window_manager_name() == "Fluxbox":
         stage.connect("button-press-event", window_menu)
-        stage.connect("scroll-event", scroll_workspace)
+    stage.connect("scroll-event", scroll_workspace)
 
+    swipe = Clutter.SwipeAction.new()
+    swipe.connect("swept", swipe_workspace)
+    stage.add_action_with_name("SwipeWorkspace", swipe)
+        
     # Run the program.
     win.show_all()
     Gtk.main()
