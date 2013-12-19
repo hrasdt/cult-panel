@@ -16,8 +16,6 @@ class ClockApplet(Clutter.Text):
         self.format = timefmt
         self.refresh()
 
-        self.timer_id = GObject.timeout_add_seconds(1, self.refresh, None)
-
     def refresh(self, *args):
         self.set_text(arrow.now().format(self.format))
         self.timer_id = GObject.timeout_add_seconds(1, self.refresh, None)

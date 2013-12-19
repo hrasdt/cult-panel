@@ -31,7 +31,9 @@ from pprint import pprint
 from Pager import Pager
 from PagerModel import *
 from Taskbar import Taskbar
+
 from Clock import ClockApplet
+from Battery import BatteryApplet
 
 def window_menu(actor, event):
     """ Open the host WM's desktop menu.
@@ -105,11 +107,23 @@ if __name__ == "__main__":
     # The taskbar.
     taskbar = Taskbar()
     hlayout.add(taskbar, Clutter.BinAlignment.START, Clutter.BinAlignment.CENTER)
+
+    # Applet box.
+    applet_lo = Clutter.BoxLayout.new()
+    applet_lo.set_spacing(8)
+    applet_box = Clutter.Box.new(applet_lo)
+    hlayout.add(applet_box,
+                Clutter.BinAlignment.END,
+                Clutter.BinAlignment.CENTER)
     
+    # Battery indicator.
+    batt = BatteryApplet(colour = Clutter.Color.new(255, 255, 255, 255))
+    applet_box.add_actor(batt)
+
     # The clock.
     clock = ClockApplet("HH:mm - DD.MM.YY",
                         colour = Clutter.Color.new(255, 255, 255, 255))
-    hlayout.add(clock, Clutter.BinAlignment.END, Clutter.BinAlignment.CENTER)
+    applet_box.add_actor(clock)
 
     # And the pager.
     pager = Pager(screen)
