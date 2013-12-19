@@ -16,6 +16,7 @@ __docstring__ = """
 """
 
 import sys
+from subprocess import call as call_process
 from gi.repository import GtkClutter
 GtkClutter.init(sys.argv)
 
@@ -23,7 +24,6 @@ from gi.repository import Wnck, Clutter, Gtk, Gdk
 import arrow # For time mangling.
 
 import config # My config file handler.
-from Clock import ClockApplet
 
 from math import floor
 from pprint import pprint
@@ -31,7 +31,40 @@ from pprint import pprint
 from Pager import Pager
 from PagerModel import *
 from Taskbar import Taskbar
+from Clock import ClockApplet
 
+def window_menu(actor, event):
+    """ Open the host WM's desktop menu.
+
+    In Fluxbox, this is bound to right-click, so we'll do the same.
+    """
+    if event.button == 3:
+        # The actor parameter is always the stage.
+        # We need to make sure not to get confused with the taskbar.
+        target = actor.get_actor_at_pos(Clutter.PickMode.REACTIVE,
+                                        event.x, event.y)
+        if target is actor:
+            # We've clicked the stage. We can open the menu.
+            call_process(["fluxbox-remote", "RootMenu"])
+
+SECS_PER_SCROLL = 0.35
+_last_scroll = 0
+def scroll_workspace(actor, event, reverse = False):
+    """ Change workspace by scrolling. """
+    if event.type == Clutter.EventType.SCROLL:
+        global _last_scroll
+        now = event.time
+
+        if event.direction == Clutter.ScrollDirection.UP:
+            if now - _last_scroll > SECS_PER_SCROLL * 1000:
+                _last_scroll = now
+                switch_workspace("next" if not reverse else "prev")
+
+        elif event.direction == Clutter.ScrollDirection.DOWN:
+            if now - _last_scroll > SECS_PER_SCROLL * 1000:
+                _last_scroll = now
+                switch_workspace("prev" if not reverse else "next")
+        
 if __name__ == "__main__":
     # Gtk application window.
     win = Gtk.Window.new(Gtk.WindowType.TOPLEVEL)
@@ -43,13 +76,11 @@ if __name__ == "__main__":
     win.move(0, 0)
     win.set_title("cult panel")
     win.stick()
-    win.set_skip_pager_hint(True)
-    win.set_skip_taskbar_hint(True)
-    win.set_type_hint(Gdk.WindowTypeHint.DOCK) # Also hides decoration.
+    win.set_type_hint(Gdk.WindowTypeHint.DOCK) # Also hides decoration and pager/tasklist.
     
     # Load the screen.
     screen = Wnck.Screen.get_default()
-    screen.force_update()
+    screen.force_update() # So our initial display is accurate.
 
     def exit_cb(*args):
         # I don't know if this is actually necessary...
@@ -74,7 +105,6 @@ if __name__ == "__main__":
     # The taskbar.
     taskbar = Taskbar()
     hlayout.add(taskbar, Clutter.BinAlignment.START, Clutter.BinAlignment.CENTER)
-
     
     # The clock.
     clock = ClockApplet("HH:mm - DD.MM.YY",
@@ -82,13 +112,15 @@ if __name__ == "__main__":
     hlayout.add(clock, Clutter.BinAlignment.END, Clutter.BinAlignment.CENTER)
 
     # And the pager.
-    pager = Pager()
+    pager = Pager(screen)
     hlayout.add(pager, Clutter.BinAlignment.CENTER, Clutter.BinAlignment.CENTER)
 
-    # Bind window management events.
-    screen.connect("active-workspace-changed", pager.update)
-    screen.connect("window-opened", pager.update)
-    screen.connect("window-closed", pager.update)
-    
+    # Bind workspace switching and assorted events.
+    # At the moment, we only know how to open Fluxbox's menu.
+    if screen.get_window_manager_name() == "Fluxbox":
+        stage.connect("button-press-event", window_menu)
+        stage.connect("scroll-event", scroll_workspace)
+
+    # Run the program.
     win.show_all()
     Gtk.main()

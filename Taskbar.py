@@ -61,6 +61,8 @@ class TaskbarItem(Clutter.Box):
         self.wnck_win.connect("name-changed", self.name_changed)
         self.wnck_win.connect("workspace-changed", self.workspace_changed)
 
+        self.wnck_win.connect("state-changed", self.state_changed)
+
     def belongs_to(self, window):
         return window is self.wnck_win
 
@@ -88,6 +90,10 @@ class TaskbarItem(Clutter.Box):
         self.icon = new_pixbuf_texture(self.icon.get_width(),
                                        self.icon.get_height(),
                                        win.get_icon())
+
+    def state_changed(self, win, change_mask, new_state):
+        self.update_colour()
+    
     def update_colour(self):
         self.set_color(Taskbar.get_theme_colour(self.wnck_win))
                     

@@ -1,4 +1,5 @@
 from gi.repository import Clutter, Wnck
+import arrow
 
 def is_skipped_pager(win):
     return win.is_skip_pager()
@@ -47,6 +48,10 @@ def get_pager_model():
 def get_pager_state(ws):
     return get_pager_model().get_state(ws)
 
+def update_pager_state(window, change_mask, new_state):
+    ws = window.get_workspace()
+    get_pager_model().recalculate_workspace_state(ws)
+
 def workspace_by_number(num):
     return get_pager_model().get_workspace_number(num)
 
@@ -89,10 +94,7 @@ class PagerModel (object):
 
         # Set the active workspace.
         a = self.screen.get_active_workspace()
-        for i in self.workspaces:
-            if i is a:
-                self.workspace_states[i] |= PagerModel.ACTIVE
-                break
+        self.workspace_states[a] |= PagerModel.ACTIVE
 
     def change_workspace(self, screen, prev):
         # Disable the 'active' flag on the old workspace.
@@ -111,6 +113,7 @@ class PagerModel (object):
 
         if ws is not None:
             self.tasklist[ws].append(win)
+        self.recalculate_workspace_state(ws)
 
     def add_window(self, screen, win):
         workspace = win.get_workspace()
@@ -120,24 +123,30 @@ class PagerModel (object):
             self.tasklist[workspace].append(win)
             # Connect the signals.
             win.connect("workspace-changed", self.window_workspace_changed)
+            win.connect("state-changed", update_pager_state)
             
         self.recalculate_workspace_state(workspace)
     
     def remove_window(self, screen, win):
         """ Remove a window from the pager (e.g. if it's closed). """
         ws = win.get_workspace()
-        if ws is None:
-            pass
-        else:
-            self.tasklist[ws].remove(win)
+        self.tasklist[ws].remove(win)
+
+        if ws is not None:
             self.recalculate_workspace_state(ws)
 
-    def recalculate_workspace_state(self, workspace):
-        if workspace is None:
+    def recalculate_workspace_state(self, workspace = -1):
+        if isinstance(workspace, int) and workspace == -1:
             for i in self.workspaces:
                 self.recalculate_workspace_state(i)
-        else:
-            self.workspace_states[workspace] = PagerModel.NO_WINDOWS
+
+        elif workspace is not None:
+            active = self.screen.get_active_workspace()
+            
+            if workspace is active:
+                self.workspace_states[workspace] = PagerModel.ACTIVE
+            else:
+                self.workspace_states[workspace] = PagerModel.NO_WINDOWS
 
             for win in self.tasklist[workspace]:
                 # Now, update the Pager.
@@ -158,16 +167,8 @@ class PagerModel (object):
                     
     def get_state(self, ws):
         """ Get the state bitmask for a workspace. """
-        if isinstance(ws, int):
-            return self.workspace_states[self.workspaces[ws]]
-        elif isinstance(ws, str):
-            for i in self.workspaces:
-                if i.get_name() == ws:
-                    return self.workspace_states[i]
-            return None # Couldn't find it :/
-        else:
-            return self.workspace_states[ws]
-
+        return self.workspace_states[ws]
+        
     def get_state_list(self):
         return [self.workspace_states[i] for i in self.workspaces]
         
