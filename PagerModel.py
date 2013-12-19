@@ -130,7 +130,8 @@ class PagerModel (object):
     def remove_window(self, screen, win):
         """ Remove a window from the pager (e.g. if it's closed). """
         ws = win.get_workspace()
-        self.tasklist[ws].remove(win)
+        if win in self.tasklist[ws]:
+            self.tasklist[ws].remove(win)
 
         if ws is not None:
             self.recalculate_workspace_state(ws)
