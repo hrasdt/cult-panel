@@ -1,6 +1,7 @@
 from gi.repository import Clutter, Wnck
 import arrow
 from PagerModel import PagerModel, get_pager_model, workspace_by_number
+from PagerModel import is_skipped_tasklist, is_mini, is_urgent, is_active, is_normal
 
 def new_pixbuf_texture(ww, hh, pb):
     t = Clutter.Texture.new()
@@ -61,6 +62,9 @@ class TaskbarItem(Clutter.Box):
         self.wnck_win.connect("state-changed", self.state_changed)
         self.wnck_win.connect("workspace-changed", self.workspace_changed)
 
+    def belongs_to(self, window):
+        return window is self.wnck_win
+
     def press_event(self, actor, event):
         if event.button == 3:
             # Minimise.
@@ -94,6 +98,8 @@ class TaskbarItem(Clutter.Box):
 class Taskbar(Clutter.Box):
     def __init__(self, all_workspaces = False):
         Clutter.Box.__init__(self)
+        scr = Wnck.Screen.get_default()
+        active_ws = scr.get_active_workspace()
         
         self.show_all_workspaces = all_workspaces
 
@@ -101,28 +107,72 @@ class Taskbar(Clutter.Box):
         self.lm.set_spacing(2)
         self.set_layout_manager(self.lm)
 
-        for w in get_pager_model().get_tasklist(None):
+        for w in get_pager_model().get_tasklist(None, True):
             item = TaskbarItem(w)
+            self.set_visibility(item, [None, active_ws])
             self.add_actor(item)
         
         # Make sure the right windows are visible.
         self.refresh()
 
         # And connect the signals.
-        scr = Wnck.Screen.get_default()
-        scr.connect("active-workspace-changed", self.refresh)
+        scr.connect("active-workspace-changed", self.active_workspace_changed)
+        scr.connect("window-opened", self.add_window)
+        scr.connect("window-closed", self.remove_window)
 
-    def refresh(self, screen = None, prev = None):
-        if self.show_all_workspaces:
-            # We just show everything.
-            self.show_all()
+    def set_visibility(self, task_item, dat):
+        """ Set the correct visibility for a TaskbarItem. """
+        prev, cur = dat
+        
+        window = task_item.wnck_win
+        ws = window.get_workspace()
+            
+        # Never show these.
+        if is_skipped_tasklist(window):
+            task_item.hide()
+
+        # Always show in this case.
+        elif self.show_all_workspaces:
+            task_item.show()
+
+        # Sticky window, but not skip-tasklist.
+        elif ws is None:
+            task_item.show()
+
+        # It was on the last one; hide it!
+        elif ws is prev:
+            task_item.hide()
+
+        # Nope; we need to show this now.
+        elif ws is cur:
+            task_item.show()
+
         else:
-            cur = Wnck.Screen.get_default().get_active_workspace()
-            wins = get_pager_model().get_tasklist(cur, False)
-            self.foreach(
-                lambda win,_: win.show() if win.wnck_win in wins else win.hide(),
-                None
-                )
+            task_item.hide()
+        
+    def refresh(self):
+        self.active_workspace_changed(None, None)
+        
+    def active_workspace_changed(self, screen, prev):
+        cur = Wnck.Screen.get_default().get_active_workspace()
+        
+        self.foreach(self.set_visibility, [prev, cur])
+
+    def add_window(self, screen, window):
+        item = TaskbarItem(window)
+        self.set_visibility(item, [None, screen.get_active_workspace()])
+        self.add_actor(item)
+
+    def remove_window(self, screen, window):
+        """ Remove an item from the taskbar completely.
+
+        This will be called when a window is closed.
+        """
+        def do_remove(task, dat = None):
+            if task.belongs_to(window):
+                self.remove_actor(task)
+
+        self.foreach(do_remove, None)
 
     def window_workspace_changed(self, window, taskbar_child):
         if window.get_workspace() != Wnck.Screen.get_default().get_active_workspace():
@@ -137,11 +187,12 @@ class Taskbar(Clutter.Box):
             "normal": "#303030",
             "urgent": "#505050",
             }
-        if window.needs_attention():
+        
+        if is_urgent(window):
             return Clutter.Color.from_string(maps["urgent"])[1]
-        elif window.is_minimized():
+        elif is_mini(window):
             return Clutter.Color.from_string(maps["minimised"])[1]
-        elif window.is_active():
+        elif is_active(window):
             return Clutter.Color.from_string(maps["active"])[1]
-        else:
+        elif is_normal(window):
             return Clutter.Color.from_string(maps["normal"])[1]
