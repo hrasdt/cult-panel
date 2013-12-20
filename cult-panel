@@ -11,7 +11,8 @@
 #   -> cult-panel/			: the various config files we need.
 #   -> cult-panel/themes	: all user-installed theme things.
 
-MODULE_DIR=../lib/cult-panel
+MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MODULE_DIR="$MY_DIR/../lib/cult-panel"
 export PYTHONPATH=$PYTHONPATH:$MODULE_DIR
 
 # Run the panel!
