@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Directory structure:
+#
+# $PREFIX/ 
+#   -> bin/*			  		: this sh script.
+#   -> lib/cult-panel/*		: the cult module with all the classes we need.
+#   -> share/cult-panel/*	: default config/theme files.
+#
+# $XDG_CONFIG_HOME/
+#   -> cult-panel/			: the various config files we need.
+#   -> cult-panel/themes	: all user-installed theme things.
+
+MODULE_DIR=../lib/cult-panel
+export PYTHONPATH=$PYTHONPATH:$MODULE_DIR
+
+# Run the panel!
+exec $MODULE_DIR"/main.py" "$@"
