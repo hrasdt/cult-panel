@@ -16,7 +16,6 @@ __docstring__ = """
 """
 
 import sys
-from subprocess import call as call_process
 from math import floor
 from pprint import pprint
 
@@ -26,8 +25,13 @@ GtkClutter.init(sys.argv)
 
 from gi.repository import Wnck, Clutter, Gtk, Gdk
 
+# We need this to get the X11 ID for our panel window.
+from gi.repository import GdkX11
+
 # For time mangling.
 import arrow
+
+from WmInteraction import window_manager_menu, set_xprop_struts
 
 from Pager import Pager
 from PagerModel import *
@@ -123,6 +127,11 @@ class Panel(Gtk.Window):
     def run(self):
         # Run the program.
         self.show_all()
+
+        # Now that the window is realised, we need to set the strut request.
+        xid = self.get_property("window").get_xid()
+        set_xprop_struts(xid, 0, 0, self.get_size()[1], 0)
+
         Gtk.main()
 
     def exit(self, *args):
@@ -144,7 +153,7 @@ class Panel(Gtk.Window):
                                             event.x, event.y)
             if target is actor:
                 # We've clicked the stage. We can open the menu.
-                call_process(["fluxbox-remote", "RootMenu"])
+                window_manager_menu()
             
     def scroll_workspace(self, actor, event, reverse = False):
         """ Change workspace by scrolling. """

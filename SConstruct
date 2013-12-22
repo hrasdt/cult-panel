@@ -10,6 +10,7 @@ module_objs = [
     "Pager.py",
     "PagerModel.py",
     "Panel.py",
+    "WmInteraction.py",
     "main.py",
     "__init__.py", # Why we might want this, I don't know.
     ]
