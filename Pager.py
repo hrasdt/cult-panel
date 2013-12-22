@@ -47,18 +47,18 @@ class PagerDot(Clutter.Box):
 
 class Pager(Clutter.Box):
     """ A pager widget to show the workspace view. """
-    DOT_SIZE = 8
-    DOT_SPACING = 4
-
     def __init__(self, screen, height = 16):
         Clutter.Box.__init__(self)
 
+        self.dot_size = height / 2
+        self.dot_spacing = height / 4
+
         self.lm = Clutter.BoxLayout.new()
-        self.lm.set_spacing(self.DOT_SPACING)
+        self.lm.set_spacing(self.dot_spacing)
         self.set_layout_manager(self.lm)
 
         for i in get_pager_model().workspaces:
-            indic = PagerDot(i, self.DOT_SIZE)
+            indic = PagerDot(i, self.dot_size)
             self.add_actor(indic)
 
         # Connect signals.

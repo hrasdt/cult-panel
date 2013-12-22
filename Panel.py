@@ -45,18 +45,20 @@ class Panel(Gtk.Window):
         Gtk.Window.__init__(self, Gtk.WindowType.TOPLEVEL)
         self.connect("destroy", self.exit)
 
+        # Load the screen.
+        self.screen = Wnck.Screen.get_default()
+        self.screen.force_update() # So our initial display is accurate.
+
+        self.size = self.screen.get_width(), 16
+        
         # Gtk hints and settings.
-        self.set_size_request(1366, 16)
+        self.set_size_request(*self.size)
         self.move(0, 0)
         self.set_title("cult panel")
         self.stick()
 
         # Also hides decoration and pager/tasklist.
         self.set_type_hint(Gdk.WindowTypeHint.DOCK)
-
-        # Load the screen.
-        self.screen = Wnck.Screen.get_default()
-        self.screen.force_update() # So our initial display is accurate.
 
         # Include the Clutter stage.
         self.embed = GtkClutter.Embed.new()
@@ -79,7 +81,7 @@ class Panel(Gtk.Window):
             }
         
         # The taskbar.
-        self.taskbar = Taskbar()
+        self.taskbar = Taskbar(self.screen, self.size[1])
         hlayout.add(self.taskbar,
                     Clutter.BinAlignment.START,
                     Clutter.BinAlignment.CENTER)
@@ -105,7 +107,7 @@ class Panel(Gtk.Window):
         self.widget_box.add_actor(self.widgets["clock"])
 
         # And the pager.
-        self.pager = Pager(self.screen)
+        self.pager = Pager(self.screen, height = self.size[1])
         hlayout.add(self.pager,
                     Clutter.BinAlignment.CENTER,
                     Clutter.BinAlignment.CENTER)
