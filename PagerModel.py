@@ -94,7 +94,8 @@ class PagerModel (object):
 
         # Set the active workspace.
         a = self.screen.get_active_workspace()
-        self.workspace_states[a] |= PagerModel.ACTIVE
+        if a is not None:
+            self.workspace_states[a] |= PagerModel.ACTIVE
 
     def change_workspace(self, screen, prev):
         # Disable the 'active' flag on the old workspace.
