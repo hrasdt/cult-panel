@@ -11,12 +11,12 @@ module_objs = [
     "PagerModel.py",
     "Panel.py",
     "WmInteraction.py",
+    "Config.py",
     "main.py",
     "__init__.py", # Why we might want this, I don't know.
     ]
 
 prefix = ARGUMENTS.get("prefix", "/usr/local/")
-print(prefix)
 
 Alias("install-bin",
       Install(os.path.join(prefix, "bin"),
@@ -24,9 +24,12 @@ Alias("install-bin",
 Alias("install-lib",
       Install(os.path.join(prefix, "lib", lib_name),
               module_objs))
+Alias("install-share",
+      Install(os.path.join(prefix, "share"),
+              ["cult-panel.cfg.default"]))
 
 Alias("install",
-      ["install-lib", "install-bin"])
+      ["install-lib", "install-bin", "install-share"])
 
 Alias("uninstall",
       env.Command("uninstall", None, Delete(FindInstalledFiles())))

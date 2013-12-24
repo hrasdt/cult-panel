@@ -8,22 +8,20 @@ def read_file(fpath):
     return data
 
 class BatteryApplet (Clutter.Text):
-    def __init__(self, path = "/sys/class/power_supply/BAT0/",
-                 fmt = "{state} - {capacity}%",
-                 font_desc = "Bauhaus 9",
-                 colour = None):
+    def __init__(self, conf):
         Clutter.Text.__init__(self)
 
+        self.conf = conf
+        
         # The label format.
-        self.format = fmt
+        self.format = conf.get("Battery", "format")
 
         # Where we query.
-        self.path = path
+        self.path = conf.get("Battery", "path") or path
 
         # Theme.
-        self.set_font_name(font_desc)
-        if colour:
-            self.set_color(colour)
+        self.set_font_name(conf.getfont("Battery"))
+        self.set_color(conf.getcolour("Battery", "font-colour"))
 
         self.refresh()
 

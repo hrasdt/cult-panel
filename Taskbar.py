@@ -1,5 +1,6 @@
 from gi.repository import Clutter, Wnck
 import arrow
+
 from PagerModel import PagerModel, get_pager_model, workspace_by_number
 from PagerModel import is_skipped_tasklist, is_mini, is_urgent, is_active, is_normal
 
@@ -20,15 +21,11 @@ def new_pixbuf_texture(ww, hh, pb):
     return t
 
 class TaskbarItem(Clutter.Box):
-    FONT_SPEC = "Bauhaus 9"
-    TEXT_COLOUR = Clutter.Color.from_string("#fff")[1]
-    
-    def __init__(self, window, height = 16, width = 140):
+    def __init__(self, window, conf, height = 16):
         Clutter.Box.__init__(self)
 
-        # Set the width.
-        self.preferred_width = width
-        
+        self.conf = conf
+
         # The window is a WnckWindow.
         self.wnck_win = window
 
@@ -37,19 +34,31 @@ class TaskbarItem(Clutter.Box):
         self.set_layout_manager(self.lm)
 
         # Get the icon.
-        self.icon = new_pixbuf_texture(height, height,
-                                       window.get_icon())
+        if conf.getboolean("Taskbar", "show-icons"):
+            self.icon = new_pixbuf_texture(height, height,
+                                           window.get_icon())
+        else:
+            self.icon = None
 
         # And the text label.
-        self.label = Clutter.Text.new_full(self.FONT_SPEC,
+        fontspec = conf.get("Taskbar", "font-name") + " " + conf.get("Taskbar", "font-size")
+        self.label = Clutter.Text.new_full(fontspec,
                                            window.get_name(),
-                                           self.TEXT_COLOUR)
-        if width > 0:
-            self.label.set_size(width - self.icon.get_width() - self.lm.get_spacing(), -1)
+                                           conf.getcolour("Taskbar",
+                                                          "font-colour"))
+        if conf.getboolean("Taskbar", "fixed-width"):
+            if self.icon:
+                if self.label:
+                    self.label.set_size(conf.getint("Taskbar", "width") - self.icon.get_width() - self.lm.get_spacing(), -1)
+            else:
+                if self.label:
+                    self.label.set_size(conf.getint("Taskbar", "width"), -1)
         
         # Add the parts.
-        self.add_actor(self.icon)
-        self.add_actor(self.label)
+        if conf.getboolean("Taskbar", "show-icons"):
+            self.add_actor(self.icon)
+        if conf.getboolean("Taskbar", "show-labels"):
+            self.add_actor(self.label)
 
         # Hook up input.
         self.set_reactive(True)
@@ -95,7 +104,16 @@ class TaskbarItem(Clutter.Box):
         self.update_colour()
     
     def update_colour(self):
-        self.set_color(Taskbar.get_theme_colour(self.wnck_win))
+        col = None
+        if is_urgent(self.wnck_win):
+            col = self.conf.getcolour("Taskbar", "urgent")
+        elif is_mini(self.wnck_win):
+            col = self.conf.getcolour("Taskbar", "minimised")
+        elif is_active(self.wnck_win):
+            col = self.conf.getcolour("Taskbar", "active")
+        elif is_normal(self.wnck_win):
+            col = self.conf.getcolour("Taskbar", "normal")
+        self.set_color(col)
                     
     def workspace_changed(self, win):
         """ Update the workspace that this window is on. """
@@ -103,19 +121,24 @@ class TaskbarItem(Clutter.Box):
         self.get_parent().window_workspace_changed(win, self)
 
 class Taskbar(Clutter.Box):
-    def __init__(self, screen, height = 16, all_workspaces = False):
+    def __init__(self, conf, screen, size):
         Clutter.Box.__init__(self)
         active_ws = screen.get_active_workspace()
 
         self.screen = screen
-        self.show_all_workspaces = all_workspaces
+        self.conf = conf
+        self.panel_size = size
 
         self.lm = Clutter.BoxLayout()
         self.lm.set_spacing(2)
         self.set_layout_manager(self.lm)
 
+        # Work out the orientation/size.
+        if self.conf.is_vertical():
+            self.lm.set_vertical(True)
+            
         for w in get_pager_model().get_tasklist(None, True):
-            item = TaskbarItem(w, height = height)
+            item = TaskbarItem(w, self.conf, height = min(*size))
             self.set_visibility(item, [None, active_ws])
             item.update_colour()
             self.add_actor(item)
@@ -141,7 +164,7 @@ class Taskbar(Clutter.Box):
             task_item.hide()
 
         # Always show in this case.
-        elif self.show_all_workspaces:
+        elif self.conf.getboolean("Taskbar", "all-workspaces"):
             task_item.show()
 
         # Sticky window, but not skip-tasklist.
@@ -168,7 +191,7 @@ class Taskbar(Clutter.Box):
         self.foreach(self.set_visibility, [prev, cur])
 
     def add_window(self, screen, window):
-        item = TaskbarItem(window)
+        item = TaskbarItem(window, self.conf, height = min(*self.panel_size))
         self.set_visibility(item, [None, screen.get_active_workspace()])
         self.add_actor(item)
 
@@ -198,20 +221,3 @@ class Taskbar(Clutter.Box):
             taskbar_child.hide()
         else:
             taskbar_child.show()
-            
-    def get_theme_colour(window):
-        maps = {
-            "active": "#404040",
-            "minimised": "#0f0f0f",
-            "normal": "#303030",
-            "urgent": "#505050",
-            }
-        
-        if is_urgent(window):
-            return Clutter.Color.from_string(maps["urgent"])[1]
-        elif is_mini(window):
-            return Clutter.Color.from_string(maps["minimised"])[1]
-        elif is_active(window):
-            return Clutter.Color.from_string(maps["active"])[1]
-        elif is_normal(window):
-            return Clutter.Color.from_string(maps["normal"])[1]

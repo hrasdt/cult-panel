@@ -41,7 +41,7 @@ from Clock import ClockApplet
 from Battery import BatteryApplet
 
 class Panel(Gtk.Window):
-    def __init__(self):
+    def __init__(self, conf):
         Gtk.Window.__init__(self, Gtk.WindowType.TOPLEVEL)
         self.connect("destroy", self.exit)
 
@@ -49,11 +49,15 @@ class Panel(Gtk.Window):
         self.screen = Wnck.Screen.get_default()
         self.screen.force_update() # So our initial display is accurate.
 
-        self.size = self.screen.get_width(), 16
-        
+        # Work out the orientation.
+        self.orientation = conf.get("Panel", "orientation")
+        if self.orientation in ["bottom", "top"]:
+            self.size = self.screen.get_width(), conf.getint("Panel", "size")
+        else:
+            self.size = conf.getint("Panel", "size"), self.screen.get_height()
+
         # Gtk hints and settings.
         self.set_size_request(*self.size)
-        self.move(0, 0)
         self.set_title("cult panel")
         self.stick()
 
@@ -65,13 +69,13 @@ class Panel(Gtk.Window):
         self.add(self.embed)
 
         self.stage = self.embed.get_stage()
-        self.stage.set_color(Clutter.Color.new(48, 48, 48, 255))
+        self.stage.set_color(conf.getcolour("Panel", "background"))
 
         # Layout and container bits.
         hlayout = Clutter.BinLayout.new(Clutter.BinAlignment.CENTER,
                                         Clutter.BinAlignment.CENTER)
         box = Clutter.Box.new(hlayout)
-        box.set_size(*self.get_size_request())
+        box.set_size(*self.size)
         self.stage.add_actor(box)
 
         # Child widgets.
@@ -81,7 +85,7 @@ class Panel(Gtk.Window):
             }
         
         # The taskbar.
-        self.taskbar = Taskbar(self.screen, self.size[1])
+        self.taskbar = Taskbar(conf, self.screen, self.size)
         hlayout.add(self.taskbar,
                     Clutter.BinAlignment.START,
                     Clutter.BinAlignment.CENTER)
@@ -89,6 +93,8 @@ class Panel(Gtk.Window):
         # Applet box.
         applet_lo = Clutter.BoxLayout.new()
         applet_lo.set_spacing(8)
+        if conf.is_vertical(): applet_lo.set_vertical(True)
+        
         self.widget_box = Clutter.Box.new(applet_lo)
         hlayout.add(self.widget_box,
                     Clutter.BinAlignment.END,
@@ -96,18 +102,15 @@ class Panel(Gtk.Window):
 
         ## Now, the various widgets.
         # Battery indicator.
-        self.widgets["battery"] = \
-          BatteryApplet(colour = Clutter.Color.new(255, 255, 255, 255))
+        self.widgets["battery"] = BatteryApplet(conf)
         self.widget_box.add_actor(self.widgets["battery"])
 
         # The clock.
-        self.widgets["clock"] = ClockApplet("HH:mm - DD.MM.YY",
-                                            colour = Clutter.Color.new(255, 255,
-                                                                       255, 255))
+        self.widgets["clock"] = ClockApplet(conf)
         self.widget_box.add_actor(self.widgets["clock"])
 
         # And the pager.
-        self.pager = Pager(self.screen, height = self.size[1])
+        self.pager = Pager(conf, self.screen)
         hlayout.add(self.pager,
                     Clutter.BinAlignment.CENTER,
                     Clutter.BinAlignment.CENTER)
@@ -130,9 +133,22 @@ class Panel(Gtk.Window):
         # Run the program.
         self.show_all()
 
-        # Now that the window is realised, we need to set the strut request.
+        # Now that the window is realised, we will need to set the strut request.
         xid = self.get_property("window").get_xid()
-        set_xprop_struts(xid, 0, 0, self.get_size()[1], 0)
+
+        # Move ourselves to the right place, and set the right strut.
+        if self.orientation == "top":
+            self.move(0, 0)
+            set_xprop_struts(xid, 0, 0, self.size[1], 0)
+        elif self.orientation == "bottom":
+            self.move(0, self.screen.get_height() - self.size[1])
+            set_xprop_struts(xid, 0, 0, 0, self.size[1])
+        elif self.orientation == "left":
+            self.move(0, 0)
+            set_xprop_struts(xid, self.size[0], 0, 0, 0)
+        elif self.orientation == "right":
+            self.move(self.screen.get_width() - self.size[0], 0)
+            set_xprop_struts(xid, 0, self.size[0], 0, 0)
 
         Gtk.main()
 

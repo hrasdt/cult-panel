@@ -2,18 +2,14 @@ from gi.repository import Clutter, GObject
 import arrow
 
 class ClockApplet(Clutter.Text):
-    def __init__(self, timefmt,
-                 font_desc = "Bauhaus 9",
-                 colour = None):
-        
+    def __init__(self, conf):
         Clutter.Text.__init__(self)
 
-        self.set_font_name(font_desc)
+        self.set_font_name(conf.getfont("Clock"))
         self.set_text("[Clock]")
-        if colour:
-            self.set_color(colour)
+        self.set_color(conf.getcolour("Clock", "font-colour"))
         
-        self.format = timefmt
+        self.format = conf.get("Clock", "format")
         self.refresh()
 
     def refresh(self, *args):
