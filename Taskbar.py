@@ -1,7 +1,7 @@
 from gi.repository import Clutter, Wnck
 import arrow
 
-from PagerModel import PagerModel, get_pager_model, workspace_by_number
+from PagerModel import PagerModel, workspace_by_number
 from PagerModel import is_skipped_tasklist, is_mini, is_urgent, is_active, is_normal
 
 def new_pixbuf_texture(ww, hh, pb):
@@ -121,12 +121,14 @@ class TaskbarItem(Clutter.Box):
         self.get_parent().window_workspace_changed(win, self)
 
 class Taskbar(Clutter.Box):
-    def __init__(self, conf, screen, size):
+    def __init__(self, conf, pager_model, size):
         Clutter.Box.__init__(self)
-        active_ws = screen.get_active_workspace()
 
-        self.screen = screen
+        self.screen = conf.getscreen()
+        active_ws = self.screen.get_active_workspace()
+
         self.conf = conf
+        self.pager_model = pager_model
         self.panel_size = size
 
         self.lm = Clutter.BoxLayout()
@@ -137,7 +139,7 @@ class Taskbar(Clutter.Box):
         if self.conf.is_vertical():
             self.lm.set_vertical(True)
             
-        for w in get_pager_model().get_tasklist(None, True):
+        for w in pager_model.get_tasklist(None, True):
             item = TaskbarItem(w, self.conf, height = min(*size))
             self.set_visibility(item, [None, active_ws])
             item.update_colour()
@@ -147,10 +149,11 @@ class Taskbar(Clutter.Box):
         self.refresh()
 
         # And connect the signals.
-        screen.connect("active-workspace-changed", self.active_workspace_changed)
-        screen.connect("window-opened", self.add_window)
-        screen.connect("window-closed", self.remove_window)
-        screen.connect("active-window-changed", self.update_active_window)
+        self.screen.connect("active-workspace-changed",
+                            self.active_workspace_changed)
+        self.screen.connect("window-opened", self.add_window)
+        self.screen.connect("window-closed", self.remove_window)
+        self.screen.connect("active-window-changed", self.update_active_window)
 
     def set_visibility(self, task_item, dat):
         """ Set the correct visibility for a TaskbarItem. """
@@ -186,7 +189,8 @@ class Taskbar(Clutter.Box):
         self.active_workspace_changed(None, None)
         
     def active_workspace_changed(self, screen, prev):
-        cur = Wnck.Screen.get_default().get_active_workspace()
+        if screen != self.screen: return # Ignore other screens' events.
+        cur = self.screen.get_active_workspace()
         
         self.foreach(self.set_visibility, [prev, cur])
 

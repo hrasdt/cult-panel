@@ -19,11 +19,7 @@ import sys
 from math import floor
 from pprint import pprint
 
-# This has to come before the Clutter/Gtk/Wnck imports.
-from gi.repository import GtkClutter
-GtkClutter.init(sys.argv)
-
-from gi.repository import Wnck, Clutter, Gtk, Gdk
+from gi.repository import GtkClutter, Wnck, Clutter, Gtk, Gdk
 
 # We need this to get the X11 ID for our panel window.
 from gi.repository import GdkX11
@@ -46,8 +42,11 @@ class Panel(Gtk.Window):
         self.connect("destroy", self.exit)
 
         # Load the screen.
-        self.screen = Wnck.Screen.get_default()
+        self.screen = conf.getscreen()
         self.screen.force_update() # So our initial display is accurate.
+
+        # Set up the pager model.
+        self.pager_model = PagerModel(conf)
 
         # Work out the orientation.
         self.orientation = conf.get("Panel", "orientation")
@@ -85,7 +84,7 @@ class Panel(Gtk.Window):
             }
         
         # The taskbar.
-        self.taskbar = Taskbar(conf, self.screen, self.size)
+        self.taskbar = Taskbar(conf, self.pager_model, self.size)
         hlayout.add(self.taskbar,
                     Clutter.BinAlignment.START,
                     Clutter.BinAlignment.CENTER)
@@ -110,7 +109,7 @@ class Panel(Gtk.Window):
         self.widget_box.add_actor(self.widgets["clock"])
 
         # And the pager.
-        self.pager = Pager(conf, self.screen)
+        self.pager = Pager(conf, self.pager_model)
         hlayout.add(self.pager,
                     Clutter.BinAlignment.CENTER,
                     Clutter.BinAlignment.CENTER)
@@ -128,8 +127,8 @@ class Panel(Gtk.Window):
         swipe = Clutter.SwipeAction.new()
         swipe.connect("swept", self.swipe_workspace)
         self.stage.add_action_with_name("SwipeWorkspace", swipe)
-        
-    def run(self):
+
+    def setup_visuals(self):
         # Run the program.
         self.show_all()
 
@@ -149,8 +148,6 @@ class Panel(Gtk.Window):
         elif self.orientation == "right":
             self.move(self.screen.get_width() - self.size[0], 0)
             set_xprop_struts(xid, 0, self.size[0], 0, 0)
-
-        Gtk.main()
 
     def exit(self, *args):
         # I don't know if this is actually necessary...

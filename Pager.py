@@ -1,13 +1,14 @@
 from gi.repository import Wnck, Clutter, Gdk
 import arrow
 
-from PagerModel import PagerModel, get_pager_model, switch_workspace, get_pager_state, workspace_by_number
+from PagerModel import PagerModel, switch_workspace, get_pager_state, workspace_by_number
 
 class PagerDot(Clutter.Box):
-    def __init__(self, conf, workspace):
+    def __init__(self, conf, workspace, pager_model):
         Clutter.Box.__init__(self)
 
         self.conf = conf
+        self.pager_model = pager_model
 
         # The workspace name.
         self.set_name(workspace.get_name())
@@ -39,7 +40,7 @@ class PagerDot(Clutter.Box):
 
     def update(self, *ignored):
         self.set_name(self.workspace.get_name())
-        state = get_pager_state(self.workspace)
+        state = self.pager_model.get_state(self.workspace)
 
         # Set the colours.
         col = None
@@ -53,6 +54,7 @@ class PagerDot(Clutter.Box):
             col = self.conf.getcolour("Pager", "none")
 
         self.main_dot.set_color(col)
+
         if state & PagerModel.ACTIVE:
             self.active_dot.set_color(self.conf.getcolour("Pager", "active"))
         else:
@@ -64,22 +66,22 @@ class PagerDot(Clutter.Box):
 
 class Pager(Clutter.Box):
     """ A pager widget to show the workspace view. """
-    def __init__(self, conf, screen):
+    def __init__(self, conf, pager_model):
         Clutter.Box.__init__(self)
 
         self.conf = conf
-        
         self.dot_spacing = conf.getint("Pager", "size") / 2
 
         self.lm = Clutter.BoxLayout.new()
         self.lm.set_spacing(self.dot_spacing)
         self.set_layout_manager(self.lm)
 
-        for i in get_pager_model().workspaces:
-            indic = PagerDot(conf, i)
+        for i in pager_model.workspaces:
+            indic = PagerDot(conf, i, pager_model)
             self.add_actor(indic)
 
         # Connect signals.
+        screen = conf.getscreen()
         screen.connect("active-workspace-changed", self.update)
         screen.connect("window-opened", self.update)
         screen.connect("window-closed", self.update)

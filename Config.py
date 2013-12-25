@@ -1,4 +1,4 @@
-from gi.repository import Clutter
+from gi.repository import Clutter, Wnck
 
 # For time mangling.
 import arrow
@@ -19,6 +19,7 @@ DEFAULTS = {
               "orientation": "top",
               "order": "t|p|bc",
               "background": "#ffffff", # idk lol
+              "screen": 0, # The screen on which we are displaying. Untested.
               },
 
     "Pager": {"enable": True,
@@ -61,8 +62,8 @@ class cultConfig(configparser.ConfigParser):
     def __init__(self, path):
         configparser.ConfigParser.__init__(self,
                                            interpolation = configparser.ExtendedInterpolation())
-        
-        self.read_dict(DEFAULTS)
+
+        self.read_dict(DEFAULTS.copy())
         self.read(path)
 
     def getcolour(self, section, name):
@@ -72,5 +73,8 @@ class cultConfig(configparser.ConfigParser):
         return self.get(section, "font-name")\
            + " " + self.get(section, "font-size")
 
+    def getscreen(self):
+        return Wnck.Screen.get(self.getint("Panel", "screen"))
+           
     def is_vertical(self):
         return self.get("Panel", "orientation") in ["left", "right"]

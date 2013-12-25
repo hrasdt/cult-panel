@@ -38,12 +38,13 @@ def get_pager_model():
 
     Windows for which skip-pager are set will not be counted, unless they're also marked "urgent".
     """
-    global _g_model
+    raise Exception("Can't call get_pager_model!")
+#    global _g_model
 
-    if _g_model is None:
-        _g_model = PagerModel()
+#    if _g_model is None:
+#        _g_model = PagerModel()
 
-    return _g_model
+#    return _g_model
 
 def get_pager_state(ws):
     return get_pager_model().get_state(ws)
@@ -65,8 +66,8 @@ class PagerModel (object):
     URGENT     = 4 # Window requesting attention.
     ACTIVE     = 8 # The active workspace.
 
-    def __init__(self):
-        self.screen = Wnck.Screen.get_default()
+    def __init__(self, conf):
+        self.screen = conf.getscreen()
 
         # Create the list of workspaces.
         self.workspaces = [] # List of WnckWorkspaces
