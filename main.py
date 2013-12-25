@@ -18,9 +18,17 @@ try:
 except ImportError as e:
     CONF_DIR = os.path.join(os.environ["HOME"],".config", "cult-panel")
 
-print(CONF_DIR)
-
 if __name__ == "__main__":
+    # Make sure the config dir exists. If it doesn't, leave immediately.
+    if not os.path.exists(CONF_DIR):
+        print("cult-panel requires a config file to run!")
+        print()
+        print("To get started, copy the default config from"
+              " ~/.local/share/cult-panel.cfg.default to {}/panel.cfg,"
+              " and edit it as you like.".format(CONF_DIR))
+        print()
+        sys.exit(1)
+
     # Find all the config files in the config directory, and spawn a panel for each of them.
     panels = []
     confs = [os.path.join(CONF_DIR, k)
@@ -36,4 +44,8 @@ if __name__ == "__main__":
         p.setup_visuals()
 
     if panels:
+        # We only want to start if there are panels to show.
         Gtk.main()
+    else:
+        print("No panel configs found; we can't continue!")
+        sys.exit(2)
