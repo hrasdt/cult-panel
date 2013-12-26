@@ -1,22 +1,41 @@
 [DEFAULT]
-font-size:      9
-font-name:      Bauhaus
-font-colour:    #ffffff
+# Default font to use. Note that these options can be specified per-section too.
+#font-name:      Sans       # The font to use for all text, by default.
+#font-size:      9          # The size of said font.
+#font-colour:    #ffffff    # And the colour.
 
 [Panel]
-background:     #303030
-
-[Taskbar]
-fixed-width:    yes
-width:          160
+#background:     #303030    # The background colour of the panel.
+#orientation:    top        # One of [top,left,right,bottom] - the side of the screen to anchor to.
+#size:           16         # Either the width or height, depending on orientation.
+#order:          t|p|bc     # The order in which applets are placed. Must have two |'s, but you could have e.g. t||c (for taskbar, blank, clock layout. To disable an applet, just omit its key.
+#screen:         0          # The screen number to use. This is useful if you want separate panels for separate screens.
 
 [Pager]
-size:           8
-none:           #404040
-urgent:         #dddddd
-occupied:       #aaaaaa
-minimised:      #707070
-active:         #eeeeee
+#size:           8          # The size of the pager's dots.
+#none:           #404040    # Colour of the dot when no windows are present on the workspace.
+#urgent:         #dddddd    # Colour for a workspace with (an) urgent window(s).
+#occupied:       #aaaaaa    # Normal dot colour for an in-use workspace.
+#minimised:      #707070    # Workspace has windows, but they're all minimised.
+#active:         #eeeeee    # The "active" indicator.
+
+[Taskbar]
+#all-workspaces: false      # Windows from every workspace should be shown.
+#show-icons:     yes        # Icons are visible. A fallback is provided by libwnck.
+#show-labels:    yes        # The items have labels.
+
+#active:         #404040    # Colour for the active window.
+#normal:         #303030    # Colour for the normal windows.
+#minimised:      #0f0f0f    # Minimised windows.
+#urgent:         #505050    # And urgent windows.
+
+#fixed-width:    no         # Taskbar items are a fixed width. Otherwise, only the space for icon+title is used.
+#width:          140        # Only valid if the above is set; the width they should be.
+#height:         {Panel:size} # The height of the items. Safe to leave as default.
 
 [Clock]
-format:         HH:mm:ss, MMMM D
+#format:         HH:mm - DD.MM.YY # The format for the clock. See the Arrow Python module for formatting codes.
+
+[Battery]
+#path:          /sys/class/power_supply/BAT0/ # The path to battery information. Uses 'status' and 'capacity' from that.
+#format:        {state} - {capacity}% # The format of battery display. Uses Python's str.format. Only valid keys are state and capacity.

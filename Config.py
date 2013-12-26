@@ -14,28 +14,26 @@ from PagerModel import PagerModel
 DEFAULTS = {
     "DEFAULT": {"font-name":	"Sans",
                 "font-size":	9,
-                "font-colour": "#000000",
+                "font-colour": "#ffffff",
                 },
     "Panel": {"size": 16,
               "orientation": "top",
-              "order": "t|p|bc",
-              "background": "#ffffff", # idk lol
+              "order": "t|p|bc", # To disable things, simply leave their character out.
+              "background": "#303030",
               "screen": 0, # The screen on which we are displaying. Untested.
               },
 
-    "Pager": {"enable": True,
-              "size": 8,
+    "Pager": {"size": 8,
 
-              "active": "#ffffff",
+              "active": "#eeeeee",
               
               "occupied": "#aaaaaa",
               "minimised": "#707070",
-              "urgent": "#ffffff",
+              "urgent": "#dddddd",
               "none": "#404040",
               },
 
-    "Taskbar": {"enable": True,
-                "all-workspaces": False,
+    "Taskbar": {"all-workspaces": False,
                 "show-icons": True,
                 "show-labels": True,
 
@@ -49,12 +47,10 @@ DEFAULTS = {
                 "width": 140,
                 },
               
-    "Clock": {"enable": True,
-              "format": "HH:mm - DD.MM.YY",
+    "Clock": {"format": "HH:mm - DD.MM.YY",
               },
 
-    "Battery": {"enable": True,
-                "path": "/sys/class/power_supply/BAT0/",
+    "Battery": {"path": "/sys/class/power_supply/BAT0/",
                 "format": "{state} - {capacity}%",
                 },
     }
