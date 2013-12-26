@@ -91,21 +91,23 @@ class Panel(Gtk.Window):
         box_end_lo.set_spacing(4)
 
         # Be vertical if necessary.
-        if conf.is_vertical():
+        START = Clutter.BinAlignment.START
+        MID = Clutter.BinAlignment.CENTER
+        END = Clutter.BinAlignment.END
+
+        v = conf.is_vertical()
+        if v:
             box_start_lo.set_vertical(True)
             box_middle_lo.set_vertical(True)
             box_end_lo.set_vertical(True)
 
         # And the boxes.
         self.box_start = Clutter.Box.new(box_start_lo)
-        MAIN_BIN.add(self.box_start, Clutter.BinAlignment.START,
-                     Clutter.BinAlignment.CENTER)
+        MAIN_BIN.add(self.box_start, [START, MID][v], [MID, START][v])
         self.box_middle = Clutter.Box.new(box_middle_lo)
-        MAIN_BIN.add(self.box_middle, Clutter.BinAlignment.CENTER,
-                     Clutter.BinAlignment.CENTER)
+        MAIN_BIN.add(self.box_middle, MID, MID)
         self.box_end = Clutter.Box.new(box_end_lo)
-        MAIN_BIN.add(self.box_end, Clutter.BinAlignment.END,
-                     Clutter.BinAlignment.CENTER)
+        MAIN_BIN.add(self.box_end, [END, MID][v], [MID, END][v])
 
         # Parse the config string.
         try:
