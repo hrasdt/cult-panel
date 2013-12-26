@@ -73,49 +73,54 @@ class Panel(Gtk.Window):
         self.stage.set_color(conf.getcolour("Panel", "background"))
 
         # Layout and container bits.
-        hlayout = Clutter.BinLayout.new(Clutter.BinAlignment.CENTER,
-                                        Clutter.BinAlignment.CENTER)
-        box = Clutter.Box.new(hlayout)
-        box.set_size(*self.size)
-        self.stage.add_actor(box)
+        # MAIN_BOX is the container for the three important layout widgets:
+        # - box_start, box_middle, box_end
+        # each of which will hold the taskbar/clock/pager/etc.
+        MAIN_BIN = Clutter.BinLayout.new(Clutter.BinAlignment.CENTER,
+                                         Clutter.BinAlignment.CENTER)
+        MAIN_BOX = Clutter.Box.new(MAIN_BIN)
+        MAIN_BOX.set_size(*self.size)
+        self.stage.add_actor(MAIN_BOX)
 
-        # Child widgets.
-        self.widgets = {
-            "clock": None,
-            "battery": None,
-            }
+        # Add them.
+        box_start_lo = Clutter.BoxLayout.new()
+        box_start_lo.set_spacing(4)
+        box_middle_lo = Clutter.BoxLayout.new()
+        box_middle_lo.set_spacing(4)
+        box_end_lo = Clutter.BoxLayout.new()
+        box_end_lo.set_spacing(4)
+
+        # Be vertical if necessary.
+        if conf.is_vertical():
+            box_start_lo.set_vertical(True)
+            box_middle_lo.set_vertical(True)
+            box_end_lo.set_vertical(True)
+
+        # And the boxes.
+        self.box_start = Clutter.Box.new(box_start_lo)
+        MAIN_BIN.add(self.box_start, Clutter.BinAlignment.START,
+                     Clutter.BinAlignment.CENTER)
+        self.box_middle = Clutter.Box.new(box_middle_lo)
+        MAIN_BIN.add(self.box_middle, Clutter.BinAlignment.CENTER,
+                     Clutter.BinAlignment.CENTER)
+        self.box_end = Clutter.Box.new(box_end_lo)
+        MAIN_BIN.add(self.box_end, Clutter.BinAlignment.END,
+                     Clutter.BinAlignment.CENTER)
+
+        # Parse the config string.
+        try:
+            start, mid, end = conf.get("Panel", "order").split("|", 2)
+
+            # Now, work out which goes where.
+            self.add_widgets(start, self.box_start)
+            self.add_widgets(mid, self.box_middle)
+            self.add_widgets(end, self.box_end)
+
+        except ValueError as e:
+            print("Incorrect order specification: "
+                  "got {}.".format(conf.get("Panel", "order")))
+            sys.exit(-1)
         
-        # The taskbar.
-        self.taskbar = Taskbar(conf, self.size)
-        hlayout.add(self.taskbar,
-                    Clutter.BinAlignment.START,
-                    Clutter.BinAlignment.CENTER)
-
-        # Applet box.
-        applet_lo = Clutter.BoxLayout.new()
-        applet_lo.set_spacing(8)
-        if conf.is_vertical(): applet_lo.set_vertical(True)
-        
-        self.widget_box = Clutter.Box.new(applet_lo)
-        hlayout.add(self.widget_box,
-                    Clutter.BinAlignment.END,
-                    Clutter.BinAlignment.CENTER)
-
-        ## Now, the various widgets.
-        # Battery indicator.
-        self.widgets["battery"] = BatteryApplet(conf)
-        self.widget_box.add_actor(self.widgets["battery"])
-
-        # The clock.
-        self.widgets["clock"] = ClockApplet(conf)
-        self.widget_box.add_actor(self.widgets["clock"])
-
-        # And the pager.
-        self.pager = Pager(conf)
-        hlayout.add(self.pager,
-                    Clutter.BinAlignment.CENTER,
-                    Clutter.BinAlignment.CENTER)
-
         # Bind workspace switching and assorted events.
         # At the moment, we only know how to open Fluxbox's menu.
         if self.screen.get_window_manager_name() == "Fluxbox":
@@ -157,6 +162,34 @@ class Panel(Gtk.Window):
         
         Wnck.shutdown()
         Gtk.main_quit()
+
+    def add_widgets(self,
+                   widgetlist,
+                   box):
+        """ Add a list of widgets to one of our locations.
+
+        Position should be one of the Clutter.Boxes.
+        This function automatically adjusts for vertical/horizontal layouts.
+        """
+        # widgetlist is a string.
+        for x in widgetlist:
+            q = None
+            if x == "t": # Taskbar.
+                q = Taskbar(self.conf, self.size)
+
+            elif x == "p": # Pager.
+                q = Pager(self.conf)
+
+            elif x == "b": # Battery.
+                q = BatteryApplet(self.conf)
+
+            elif x == "c": # Clock.
+                q = ClockApplet(self.conf)
+
+            if q:
+                box.add_actor(q)
+            else:
+                print("Unknown applet identifier " + x)
 
     def open_window_menu(self, actor, event):
         """ Open the host WM's desktop menu.
