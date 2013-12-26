@@ -19,8 +19,8 @@ def is_active(win):
 def is_normal(win):
     return not (is_urgent(win) or is_mini(win) or is_active(win))
 
-def switch_workspace(direction):
-    screen = Wnck.Screen.get_default()
+def switch_workspace(conf, direction):
+    screen = conf.getscreen()
     
     cur = screen.get_active_workspace()
     num = screen.get_workspace_count()
@@ -31,30 +31,6 @@ def switch_workspace(direction):
     elif direction == "prev":
         target = screen.get_workspace( (cur.get_number() - 1) % num)
         target.activate(arrow.now().timestamp)
-
-_g_model = None
-def get_pager_model():
-    """ Get a representation of the active workspaces.
-
-    Windows for which skip-pager are set will not be counted, unless they're also marked "urgent".
-    """
-    raise Exception("Can't call get_pager_model!")
-#    global _g_model
-
-#    if _g_model is None:
-#        _g_model = PagerModel()
-
-#    return _g_model
-
-def get_pager_state(ws):
-    return get_pager_model().get_state(ws)
-
-def update_pager_state(window, change_mask, new_state):
-    ws = window.get_workspace()
-    get_pager_model().recalculate_workspace_state(ws)
-
-def workspace_by_number(num):
-    return get_pager_model().get_workspace_number(num)
 
 class PagerModel (object):
     """ Store the state of workspaces. """
@@ -125,7 +101,8 @@ class PagerModel (object):
             self.tasklist[workspace].append(win)
             # Connect the signals.
             win.connect("workspace-changed", self.window_workspace_changed)
-            win.connect("state-changed", update_pager_state)
+            win.connect("state-changed",
+                        lambda w,*_: self.recalculate_workspace_state(w.get_workspace()))
             
         self.recalculate_workspace_state(workspace)
     

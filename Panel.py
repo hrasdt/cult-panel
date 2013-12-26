@@ -41,12 +41,14 @@ class Panel(Gtk.Window):
         Gtk.Window.__init__(self, Gtk.WindowType.TOPLEVEL)
         self.connect("destroy", self.exit)
 
+        self.conf = conf
+        
         # Load the screen.
         self.screen = conf.getscreen()
         self.screen.force_update() # So our initial display is accurate.
 
         # Set up the pager model.
-        self.pager_model = PagerModel(conf)
+        conf.getpagermodel()
 
         # Work out the orientation.
         self.orientation = conf.get("Panel", "orientation")
@@ -84,7 +86,7 @@ class Panel(Gtk.Window):
             }
         
         # The taskbar.
-        self.taskbar = Taskbar(conf, self.pager_model, self.size)
+        self.taskbar = Taskbar(conf, self.size)
         hlayout.add(self.taskbar,
                     Clutter.BinAlignment.START,
                     Clutter.BinAlignment.CENTER)
@@ -109,7 +111,7 @@ class Panel(Gtk.Window):
         self.widget_box.add_actor(self.widgets["clock"])
 
         # And the pager.
-        self.pager = Pager(conf, self.pager_model)
+        self.pager = Pager(conf)
         hlayout.add(self.pager,
                     Clutter.BinAlignment.CENTER,
                     Clutter.BinAlignment.CENTER)
@@ -178,15 +180,17 @@ class Panel(Gtk.Window):
             if event.direction == Clutter.ScrollDirection.UP:
                 if now - self.last_scroll > self.SECS_PER_SCROLL * 1000:
                     self.last_scroll = now
-                    switch_workspace("next" if not reverse else "prev")
+                    switch_workspace(self.conf,
+                                     "next" if not reverse else "prev")
 
             elif event.direction == Clutter.ScrollDirection.DOWN:
                 if now - self.last_scroll > self.SECS_PER_SCROLL * 1000:
                     self.last_scroll = now
-                    switch_workspace("prev" if not reverse else "next")
+                    switch_workspace(self.conf,
+                                     "prev" if not reverse else "next")
 
     def swipe_workspace(self, action, actor, direction):
         if direction == Clutter.SwipeDirection.LEFT:
-            switch_workspace("prev")
+            switch_workspace(self.conf, "prev")
         elif direction == Clutter.SwipeDirection.RIGHT:
-            switch_workspace("next")
+            switch_workspace(self.conf, "next")

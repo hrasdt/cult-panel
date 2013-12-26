@@ -9,6 +9,7 @@ import arrow
 import configparser
 
 from Panel import Panel
+from PagerModel import PagerModel
 
 DEFAULTS = {
     "DEFAULT": {"font-name":	"Sans",
@@ -66,6 +67,12 @@ class cultConfig(configparser.ConfigParser):
         self.read_dict(DEFAULTS.copy())
         self.read(path)
 
+        # Internal settings.
+        self._internal = {}
+
+        self._internal["vertical"] = \
+          self.get("Panel", "orientation") in ["left", "right"]
+
     def getcolour(self, section, name):
         return Clutter.Color.from_string(self.get(section, name))[1]
 
@@ -74,7 +81,20 @@ class cultConfig(configparser.ConfigParser):
            + " " + self.get(section, "font-size")
 
     def getscreen(self):
-        return Wnck.Screen.get(self.getint("Panel", "screen"))
-           
+        if "screen" in self._internal:
+            return self._internal["screen"]
+        else:
+            scr = Wnck.Screen.get(self.getint("Panel", "screen"))
+            self._internal["screen"] = scr
+            return scr
+
+    def getpagermodel(self):
+        if "pagermodel" in self._internal:
+            return self._internal["pagermodel"]
+        else:
+            pm = PagerModel(self)
+            self._internal["pagermodel"] = pm
+            return pm
+        
     def is_vertical(self):
-        return self.get("Panel", "orientation") in ["left", "right"]
+        return self._internal["vertical"]

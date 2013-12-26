@@ -1,14 +1,14 @@
 from gi.repository import Wnck, Clutter, Gdk
 import arrow
 
-from PagerModel import PagerModel, switch_workspace, get_pager_state, workspace_by_number
+from PagerModel import PagerModel, switch_workspace
 
 class PagerDot(Clutter.Box):
-    def __init__(self, conf, workspace, pager_model):
+    def __init__(self, conf, workspace):
         Clutter.Box.__init__(self)
 
         self.conf = conf
-        self.pager_model = pager_model
+        self.pager_model = conf.getpagermodel()
 
         # The workspace name.
         self.set_name(workspace.get_name())
@@ -66,7 +66,7 @@ class PagerDot(Clutter.Box):
 
 class Pager(Clutter.Box):
     """ A pager widget to show the workspace view. """
-    def __init__(self, conf, pager_model):
+    def __init__(self, conf):
         Clutter.Box.__init__(self)
 
         self.conf = conf
@@ -76,8 +76,8 @@ class Pager(Clutter.Box):
         self.lm.set_spacing(self.dot_spacing)
         self.set_layout_manager(self.lm)
 
-        for i in pager_model.workspaces:
-            indic = PagerDot(conf, i, pager_model)
+        for i in conf.getpagermodel().workspaces:
+            indic = PagerDot(conf, i)
             self.add_actor(indic)
 
         # Connect signals.

@@ -1,7 +1,7 @@
 from gi.repository import Clutter, Wnck
 import arrow
 
-from PagerModel import PagerModel, workspace_by_number
+from PagerModel import PagerModel
 from PagerModel import is_skipped_tasklist, is_mini, is_urgent, is_active, is_normal
 
 def new_pixbuf_texture(ww, hh, pb):
@@ -121,14 +121,13 @@ class TaskbarItem(Clutter.Box):
         self.get_parent().window_workspace_changed(win, self)
 
 class Taskbar(Clutter.Box):
-    def __init__(self, conf, pager_model, size):
+    def __init__(self, conf, size):
         Clutter.Box.__init__(self)
 
         self.screen = conf.getscreen()
         active_ws = self.screen.get_active_workspace()
 
         self.conf = conf
-        self.pager_model = pager_model
         self.panel_size = size
 
         self.lm = Clutter.BoxLayout()
@@ -139,7 +138,7 @@ class Taskbar(Clutter.Box):
         if self.conf.is_vertical():
             self.lm.set_vertical(True)
             
-        for w in pager_model.get_tasklist(None, True):
+        for w in conf.getpagermodel().get_tasklist(None, True):
             item = TaskbarItem(w, self.conf, height = min(*size))
             self.set_visibility(item, [None, active_ws])
             item.update_colour()
