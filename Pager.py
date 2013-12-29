@@ -86,6 +86,8 @@ class Pager(Clutter.Box):
         screen.connect("window-opened", self.update)
         screen.connect("window-closed", self.update)
 
+        conf.getpagermodel().connect("update-pager", self.update)
+
     def update(self, *ignored):
         """ Update the display of all the workspaces. """
         # Call update on each child with the appropriate workspace state.
